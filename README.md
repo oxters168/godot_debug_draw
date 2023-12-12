@@ -1,15 +1,15 @@
 Debug drawing utility
 ==========================
 
-This is a small debug drawing script, which you can setup as an auto-load singleton. It lets you print text on the screen, draw boxes or lines from anywhere in your code. It is mostly geared towards 3D at the moment.
+This is a small debug drawing script. It lets you print text on the screen, draw boxes or lines from anywhere in your code. It is mostly geared towards 3D at the moment.
 
 
 Usage
 -------
 
-Once installed under `addons/zylann.debug_draw`, add the `debug_draw.gd` script as an auto-load to your project and start using it as a singleton.
+Clone the repository anywhere inside your project then use it from any other script.
 
-Example with a singleton named `DebugDraw`:
+Example usage:
 
 ```gdscript
 func _process(delta):

@@ -21,7 +21,6 @@ static var singleton : DebugDraw
 
 # 2D
 
-# var _text_output : DebugTextOutput
 static var _canvas_item : CanvasItem = null
 static var _texts := {}
 static var _font : Font = null

@@ -147,12 +147,12 @@ static func draw_box_aabb(aabb: AABB, color = Color.WHITE, linger_frames = 0):
 ## @param a: begin position in world units
 ## @param b: end position in world units
 ## @param color
-static func draw_line_3d(a: Vector3, b: Vector3, color: Color):
+static func draw_line_3d(a: Vector3, b: Vector3, color: Color, linger_frames = 0):
 	if singleton == null:
 		singleton = _create_singleton()
 	_lines.append([
 		a, b, color,
-		Engine.get_frames_drawn() + LINES_LINGER_FRAMES,
+		Engine.get_frames_drawn() + LINES_LINGER_FRAMES + linger_frames,
 	])
 
 

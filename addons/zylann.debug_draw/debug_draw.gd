@@ -21,9 +21,12 @@ static var singleton : DebugDraw
 
 # 2D
 
-static var _canvas_item : CanvasItem = null
+var _canvas_item : CanvasItem = null
 static var _texts := {}
 static var _font : Font = null
+
+static var _lines_2d := []
+static var _line_2d_pool := []
 
 # 3D
 
@@ -32,10 +35,10 @@ static var _box_pool := []
 static var _box_mesh : Mesh = null
 static var _line_material_pool := []
 
-static var _lines := []
+static var _lines_3d := []
 static var _line_immediate_geometry : ImmediateMesh
 
-func _ready():		
+func _init():		
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 100
 	# Get default font
@@ -52,17 +55,29 @@ func _ready():
 	_mesh_instance.material_override = DebugDraw._get_line_material()
 	add_child(_mesh_instance)
 
+	_canvas_item = DebugDraw._create_canvas_item()
+	_canvas_item.draw.connect(_on_CanvasItem_draw)
+	add_child(_canvas_item)
+
 func _process(_delta: float):
 	DebugDraw._process_boxes()
-	DebugDraw._process_lines()
-	DebugDraw._process_canvas()
+	DebugDraw._process_lines_3d()
+	DebugDraw._process_lines_2d()
+	_process_canvas()
 
 
+static func _check_singleton_created_or_create():
+	if singleton == null:
+		singleton = _create_singleton()
 static func _create_singleton():
 	var debug_draw = DebugDraw.new()
 	var root_node = Engine.get_main_loop().current_scene.get_parent()
 	root_node.add_child.call_deferred(debug_draw)
 	return debug_draw
+static func _create_canvas_item():
+	var canvas = Node2D.new()
+	canvas.position = Vector2(8, 8)
+	return canvas
 
 ## @brief Draws the unshaded outline of a 3D cube.
 ## @param position: world-space position of the center of the cube
@@ -142,6 +157,49 @@ static func draw_box_aabb(aabb: AABB, color = Color.WHITE, linger_frames = 0):
 		"frame": Engine.get_frames_drawn() + LINES_LINGER_FRAMES + linger_frames
 	})
 
+## @brief Draws an unshaded 2D line.
+## @param a: begin position in world units
+## @param b: end position in world units
+## @param color
+static func draw_line_2d(a: Vector2, b: Vector2, color: Color, parent: Node2D, linger_frames = 0):
+	# parent as a param is a temporary solution since creating my own node2d seems to cause positioning of the line to be very incorrect
+	if singleton == null:
+		singleton = _create_singleton()
+	var mi := _get_line_2d(parent)
+	mi.clear_points()
+	mi.add_point(a)
+	mi.add_point(b)
+	mi.default_color = color
+	_lines_2d.append({
+		"node": mi,
+		"frame": Engine.get_frames_drawn() + LINES_LINGER_FRAMES + linger_frames
+	})
+## @brief Draws an unshaded 2D line defined as a ray.
+## @param origin: begin position in world units
+## @param direction
+## @param length: length of the line in world units
+## @param color
+static func draw_ray_2d(origin: Vector2, direction: Vector2, length: float, color: Color, parent: Node2D, linger_frames = 0):
+	draw_line_2d(origin, origin + direction * length, color, parent, linger_frames)
+## @brief Draws the unshaded outline of a 2D box.
+## @param position: world-space position of the center of the box
+## @param size: size of the box in world units
+## @param color
+## @param parent
+## @param linger_frames: optionally makes the box remain drawn for longer
+static func draw_box_2d(position: Vector2, size: Vector2, color: Color, parent: Node2D, linger_frames = 0):
+	var up = Vector2.UP * size.y / 2
+	var down = Vector2.DOWN * size.y / 2
+	var left = Vector2.LEFT * size.x / 2
+	var right = Vector2.RIGHT * size.x / 2
+	# top line
+	draw_line_2d(position + up + left, position + up + right, color, parent, linger_frames)
+	# right line
+	draw_line_2d(position + up + right, position + down + right, color, parent, linger_frames)
+	# bottom line
+	draw_line_2d(position + down + right, position + down + left, color, parent, linger_frames)
+	# left line
+	draw_line_2d(position + down + left, position + up + left, color, parent, linger_frames)
 
 ## @brief Draws an unshaded 3D line.
 ## @param a: begin position in world units
@@ -150,21 +208,18 @@ static func draw_box_aabb(aabb: AABB, color = Color.WHITE, linger_frames = 0):
 static func draw_line_3d(a: Vector3, b: Vector3, color: Color, linger_frames = 0):
 	if singleton == null:
 		singleton = _create_singleton()
-	_lines.append([
+	_lines_3d.append([
 		a, b, color,
 		Engine.get_frames_drawn() + LINES_LINGER_FRAMES + linger_frames,
 	])
-
 
 ## @brief Draws an unshaded 3D line defined as a ray.
 ## @param origin: begin position in world units
 ## @param direction
 ## @param length: length of the line in world units
 ## @param color
-static func draw_ray_3d(origin: Vector3, direction: Vector3, length: float, color : Color):
-	if singleton == null:
-		singleton = _create_singleton()
-	draw_line_3d(origin, origin + direction * length, color)
+static func draw_ray_3d(origin: Vector3, direction: Vector3, length: float, color: Color, linger_frames = 0):
+	draw_line_3d(origin, origin + direction * length, color, linger_frames)
 
 
 ## @brief Adds a text monitoring line to the HUD, from the provided value.
@@ -193,10 +248,24 @@ static func _get_box() -> MeshInstance3D:
 		_box_pool.pop_back()
 	return mi
 
-
 static func _recycle_box(mi: MeshInstance3D):
 	mi.hide()
 	_box_pool.append(mi)
+
+static func _get_line_2d(parent: Node2D) -> Line2D:
+	var mi : Line2D
+	if len(_line_2d_pool) == 0:
+		mi = Line2D.new()
+		mi.width = 0.1
+		mi.z_index = RenderingServer.CANVAS_ITEM_Z_MAX
+		parent.add_child(mi)
+	else:
+		mi = _line_2d_pool[-1]
+		_line_2d_pool.pop_back()
+	return mi
+static func _recycle_line_2d(mi: Line2D):
+	mi.hide()
+	_line_2d_pool.append(mi)
 
 
 static func _get_line_material() -> StandardMaterial3D:
@@ -238,12 +307,55 @@ static func _process_boxes():
 		last.queue_free()
 
 
-static func _process_lines():
+static func _process_lines_2d_delayed_free(items: Array):
+	var i := 0
+	while i < len(items):
+		var d = items[i]
+		if d.frame <= Engine.get_frames_drawn():
+			_recycle_line_material(d.node.material)
+			d.node.queue_free()
+			items[i] = items[len(items) - 1]
+			items.pop_back()
+		else:
+			i += 1
+
+static func _process_lines_2d():
+	_process_lines_2d_delayed_free(_lines_2d)
+
+	# Progressively delete boxes in pool
+	if len(_line_2d_pool) > 0:
+		var last = _line_2d_pool[-1]
+		_line_2d_pool.pop_back()
+		last.queue_free()
+
+	# for line in _lines_2d:
+	# 	if line.size() < 5:
+	# 		var geometry: Line2D = Line2D.new()
+	# 		geometry.add_point(line[0])
+	# 		geometry.add_point(line[1])
+	# 		geometry.default_color = line[2]
+	# 		line.append(geometry)
+	# 		singleton._canvas_item.add_child(geometry)
+
+	# # Delayed removal
+	# var i := 0
+	# while i < len(_lines_2d):
+	# 	var item = _lines_2d[i]
+	# 	var frame = item[3]
+	# 	if frame <= Engine.get_frames_drawn():
+	# 		_lines_2d[i] = _lines_2d[len(_lines_2d) - 1]
+	# 		var line = _lines_2d.pop_back()
+	# 		singleton._canvas_item.remove_child(line[4])
+	# 		line[4].queue_free()
+	# 	else:
+	# 		i += 1
+
+static func _process_lines_3d():
 	_line_immediate_geometry.clear_surfaces()
-	if _lines.size() > 0:
+	if _lines_3d.size() > 0:
 		_line_immediate_geometry.surface_begin(Mesh.PRIMITIVE_LINES)
 		
-		for line in _lines:
+		for line in _lines_3d:
 			var p1 : Vector3 = line[0]
 			var p2 : Vector3 = line[1]
 			var color : Color = line[2]
@@ -256,17 +368,17 @@ static func _process_lines():
 		
 	# Delayed removal
 	var i := 0
-	while i < len(_lines):
-		var item = _lines[i]
+	while i < len(_lines_3d):
+		var item = _lines_3d[i]
 		var frame = item[3]
 		if frame <= Engine.get_frames_drawn():
-			_lines[i] = _lines[len(_lines) - 1]
-			_lines.pop_back()
+			_lines_3d[i] = _lines_3d[len(_lines_3d) - 1]
+			_lines_3d.pop_back()
 		else:
 			i += 1
 
 
-static func _process_canvas():
+func _process_canvas():	
 	# Remove text lines after some time
 	for key in _texts.keys():
 		var t = _texts[key]
@@ -274,11 +386,6 @@ static func _process_canvas():
 			_texts.erase(key)
 
 	# Update canvas
-	if _canvas_item == null:
-		_canvas_item = Node2D.new()
-		_canvas_item.position = Vector2(8, 8)
-		_canvas_item.draw.connect(singleton._on_CanvasItem_draw)
-		singleton.add_child(_canvas_item)
 	_canvas_item.queue_redraw()
 
 func _on_CanvasItem_draw():

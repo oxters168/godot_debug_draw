@@ -409,14 +409,14 @@ func _on_CanvasItem_draw():
 
 static func _create_wirecube_mesh(color := Color.WHITE) -> ArrayMesh:
 	var positions := PackedVector3Array([
-		Vector3(0, 0, 0),
-		Vector3(1, 0, 0),
-		Vector3(1, 0, 1),
-		Vector3(0, 0, 1),
-		Vector3(0, 1, 0),
-		Vector3(1, 1, 0),
-		Vector3(1, 1, 1),
-		Vector3(0, 1, 1)
+		Vector3(-0.5, -0.5, -0.5), # bottom left back
+		Vector3(0.5, -0.5, -0.5), # right bottom back
+		Vector3(0.5, -0.5, 0.5), # right bottom forward
+		Vector3(-0.5, -0.5, 0.5), # left bottom forward
+		Vector3(-0.5, 0.5, -0.5), # left top back
+		Vector3(0.5, 0.5, -0.5), # right top back
+		Vector3(0.5, 0.5, 0.5), # right top forward
+		Vector3(-0.5, 0.5, 0.5)  # left top forward
 	])
 	var colors := PackedColorArray([
 		color, color, color, color,

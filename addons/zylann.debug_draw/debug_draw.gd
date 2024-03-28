@@ -95,7 +95,7 @@ static func draw_cube(position: Vector3, size: float, color: Color = Color.WHITE
 ## @param size: size of the box in world units
 ## @param color
 ## @param linger_frames: optionally makes the box remain drawn for longer
-static func draw_box(position: Vector3, size: Vector3, color: Color = Color.WHITE, linger_frames = 0):
+static func draw_box(position: Vector3, size: Vector3, color: Color = Color.WHITE, linger_frames: int = 0):
 	if singleton == null:
 		singleton = _create_singleton()
 	var mi := _get_box()
@@ -131,19 +131,19 @@ static func draw_transformed_cube(trans: Transform3D, color: Color = Color.WHITE
 ##        of color red for X, green for Y, and blue for Z.
 ## @param transform
 ## @param scale: extra scale applied on top of the transform
-static func draw_axes(_transform: Transform3D, _scale = 1.0):
+static func draw_axes(_transform: Transform3D, _scale = 1.0, linger_frames: int = 0):
 	if singleton == null:
 		singleton = _create_singleton()
-	draw_ray_3d(_transform.origin, _transform.basis.x, _scale, Color(1,0,0))
-	draw_ray_3d(_transform.origin, _transform.basis.y, _scale, Color(0,1,0))
-	draw_ray_3d(_transform.origin, _transform.basis.z, _scale, Color(0,0,1))
+	draw_ray_3d(_transform.origin, _transform.basis.x, _scale, Color(1,0,0), linger_frames)
+	draw_ray_3d(_transform.origin, _transform.basis.y, _scale, Color(0,1,0), linger_frames)
+	draw_ray_3d(_transform.origin, _transform.basis.z, _scale, Color(0,0,1), linger_frames)
 
 
 ## @brief Draws the unshaded outline of a 3D box.
 ## @param aabb: world-space box to draw as an AABB
 ## @param color
 ## @param linger_frames: optionally makes the box remain drawn for longer
-static func draw_box_aabb(aabb: AABB, color = Color.WHITE, linger_frames = 0):
+static func draw_box_aabb(aabb: AABB, color = Color.WHITE, linger_frames: int = 0):
 	if singleton == null:
 		singleton = _create_singleton()
 	var mi := _get_box()
@@ -161,7 +161,7 @@ static func draw_box_aabb(aabb: AABB, color = Color.WHITE, linger_frames = 0):
 ## @param a: begin position in world units
 ## @param b: end position in world units
 ## @param color
-static func draw_line_2d(a: Vector2, b: Vector2, color: Color, parent: Node2D, linger_frames = 0):
+static func draw_line_2d(a: Vector2, b: Vector2, color: Color, parent: Node2D, linger_frames: int = 0):
 	# parent as a param is a temporary solution since creating my own node2d seems to cause positioning of the line to be very incorrect
 	if singleton == null:
 		singleton = _create_singleton()
@@ -179,7 +179,7 @@ static func draw_line_2d(a: Vector2, b: Vector2, color: Color, parent: Node2D, l
 ## @param direction
 ## @param length: length of the line in world units
 ## @param color
-static func draw_ray_2d(origin: Vector2, direction: Vector2, length: float, color: Color, parent: Node2D, linger_frames = 0):
+static func draw_ray_2d(origin: Vector2, direction: Vector2, length: float, color: Color, parent: Node2D, linger_frames: int = 0):
 	draw_line_2d(origin, origin + direction * length, color, parent, linger_frames)
 ## @brief Draws the unshaded outline of a 2D box.
 ## @param position: world-space position of the center of the box
@@ -187,7 +187,7 @@ static func draw_ray_2d(origin: Vector2, direction: Vector2, length: float, colo
 ## @param color
 ## @param parent
 ## @param linger_frames: optionally makes the box remain drawn for longer
-static func draw_box_2d(position: Vector2, size: Vector2, color: Color, parent: Node2D, linger_frames = 0):
+static func draw_box_2d(position: Vector2, size: Vector2, color: Color, parent: Node2D, linger_frames: int = 0):
 	var up = Vector2.UP * size.y / 2
 	var down = Vector2.DOWN * size.y / 2
 	var left = Vector2.LEFT * size.x / 2
@@ -205,7 +205,7 @@ static func draw_box_2d(position: Vector2, size: Vector2, color: Color, parent: 
 ## @param a: begin position in world units
 ## @param b: end position in world units
 ## @param color
-static func draw_line_3d(a: Vector3, b: Vector3, color: Color, linger_frames = 0):
+static func draw_line_3d(a: Vector3, b: Vector3, color: Color, linger_frames: int = 0):
 	if singleton == null:
 		singleton = _create_singleton()
 	_lines_3d.append([
@@ -218,7 +218,7 @@ static func draw_line_3d(a: Vector3, b: Vector3, color: Color, linger_frames = 0
 ## @param direction
 ## @param length: length of the line in world units
 ## @param color
-static func draw_ray_3d(origin: Vector3, direction: Vector3, length: float, color: Color, linger_frames = 0):
+static func draw_ray_3d(origin: Vector3, direction: Vector3, length: float = 1, color: Color = Color.WHITE, linger_frames: int = 0):
 	draw_line_3d(origin, origin + direction * length, color, linger_frames)
 
 
